@@ -1,47 +1,87 @@
-# ESP32 Logger IDF v6 - Modular - CS SD GPIO5 - Có chú thích học code
+# ESP32 Temperature & Humidity Logger
 
-Bản này là project ESP-IDF tách file `.h/.c`, được sửa theo mạch của bạn:
+Project này là firmware ESP-IDF cho hệ thống đo và so sánh nhiều cảm biến nhiệt độ - độ ẩm trong thời gian dài. Hệ thống dùng ESP32 làm bộ điều khiển trung tâm, đọc dữ liệu từ các cảm biến, hiển thị lên LCD, lưu dữ liệu vào thẻ microSD và tạo Web Server nội bộ để xem/tải file CSV.
 
-- `SD CS = GPIO5`
-- `SD SCK = GPIO18`
-- `SD MISO = GPIO19`
-- `SD MOSI = GPIO23`
+## Mục tiêu
 
-Các file được chú thích nhiều nhất để học:
+Hệ thống được xây dựng để phục vụ bài tập lớn môn Kỹ thuật Vi xử lý. Mục tiêu chính là thu thập dữ liệu dài hạn từ nhiều cảm biến môi trường, sau đó so sánh độ lệch và độ ổn định của từng cảm biến trong cùng điều kiện đo.
 
-- `main/app_config.h`: nơi khai báo toàn bộ chân, kênh TCA, chu kỳ đọc/lưu.
-- `main/app_main.c`: luồng chạy chính kiểu Arduino `.ino`.
-- `main/storage_sd.c`: khởi tạo SD, tạo file CSV, ghi dữ liệu, resume session.
-- `main/ui_menu.c`: xử lý nút và menu LCD.
-- `main/sensors.c`: đọc DHT11, SHT31, HTU21D, AHT10, AHT20.
+Các cảm biến nhiệt độ - độ ẩm được sử dụng:
 
-## Sơ đồ chân SD đúng với bản này
+- DHT11
+- SHT31
+- HTU21D
+- AHT10
+- AHT20
+
+Ngoài ra, hệ thống có tích hợp thêm SDS011 để ghi dữ liệu bụi mịn PM2.5 và PM10.
+
+## Phần cứng sử dụng
+
+| Thiết bị | Chức năng |
+|---|---|
+| ESP32 | Vi điều khiển trung tâm |
+| TCA9548A | Bộ chia kênh I2C |
+| DHT11 | Cảm biến nhiệt độ - độ ẩm, đọc qua GPIO |
+| SHT31 | Cảm biến nhiệt độ - độ ẩm, dùng làm tham chiếu tương đối |
+| HTU21D | Cảm biến nhiệt độ - độ ẩm |
+| AHT10 | Cảm biến nhiệt độ - độ ẩm |
+| AHT20 | Cảm biến nhiệt độ - độ ẩm |
+| SDS011 | Cảm biến bụi mịn PM2.5/PM10 |
+| DS3231 | Module thời gian thực |
+| LCD2004 I2C | Hiển thị dữ liệu và trạng thái hệ thống |
+| microSD module | Lưu dữ liệu CSV |
+| Nút nhấn | Điều khiển menu và START/STOP phiên đo |
+
+## Kết nối chính
+
+Một số chân quan trọng trong firmware:
+
+| Chức năng | Chân ESP32 |
+|---|---|
+| I2C SDA | GPIO21 |
+| I2C SCL | GPIO22 |
+| SD CS | GPIO5 |
+| SD SCK | GPIO18 |
+| SD MISO | GPIO19 |
+| SD MOSI | GPIO23 |
+| SDS011 RX2 | GPIO16 |
+| SDS011 TX2 | GPIO17 |
+| DHT11 DATA | GPIO4 |
+| UP | GPIO32 |
+| DOWN | GPIO33 |
+| OK | GPIO25 |
+| BACK | GPIO26 |
+
+TCA9548A được dùng để tách các cảm biến I2C ra từng kênh riêng, tránh xung đột địa chỉ và giúp dễ kiểm tra lỗi từng cảm biến.
+
+## Cấu trúc source code
 
 ```text
-MicroSD CS   -> ESP32 GPIO5
-MicroSD SCK  -> ESP32 GPIO18
-MicroSD MISO -> ESP32 GPIO19
-MicroSD MOSI -> ESP32 GPIO23
-MicroSD GND  -> ESP32 GND
-MicroSD VCC  -> 5V hoặc 3.3V tùy module
-```
-
-Lưu ý: nếu module SD có IC ổn áp/chuyển mức thì thường cấp 5V. Nếu module trần thì cấp 3.3V.
-
-## Build và nạp
-
-Mở ESP-IDF Terminal trong VS Code, chạy:
-
-```bash
-idf.py fullclean
-idf.py set-target esp32
-idf.py build
-idf.py -p COM11 flash monitor
-```
-
-Nếu SD vẫn ERR, kiểm tra thêm:
-
-1. Thẻ đã format FAT32 chưa.
-2. Dây DO/DI có bị đấu nhầm không: DO=MISO, DI=MOSI.
-3. Module SD có cần cấp 5V không.
-4. Trong `storage_sd.c` hiện đã đặt `host.max_freq_khz = 400` để test ổn định; nếu SD nhận rồi có thể tăng lên 1000 hoặc 4000.
+.
+├── CMakeLists.txt
+├── sdkconfig.defaults
+├── README_VN.md
+└── main
+    ├── CMakeLists.txt
+    ├── app_main.c
+    ├── app_config.h
+    ├── app_state.c
+    ├── app_state.h
+    ├── app_types.h
+    ├── i2c_bus.c
+    ├── i2c_bus.h
+    ├── lcd2004.c
+    ├── lcd2004.h
+    ├── rtc_ds3231.c
+    ├── rtc_ds3231.h
+    ├── sensors.c
+    ├── sensors.h
+    ├── sds011.c
+    ├── sds011.h
+    ├── storage_sd.c
+    ├── storage_sd.h
+    ├── ui_menu.c
+    ├── ui_menu.h
+    ├── web_server.c
+    └── web_server.h
