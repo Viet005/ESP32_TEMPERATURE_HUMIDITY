@@ -1,5 +1,5 @@
 # ESP32 Temperature & Humidity Logger
-
+hi
 Project này là firmware ESP-IDF cho hệ thống đo và so sánh nhiều cảm biến nhiệt độ - độ ẩm trong thời gian dài. Hệ thống dùng ESP32 làm bộ điều khiển trung tâm, đọc dữ liệu từ các cảm biến, hiển thị lên LCD, lưu dữ liệu vào thẻ microSD và tạo Web Server nội bộ để xem/tải file CSV.
 
 ## Mục tiêu
